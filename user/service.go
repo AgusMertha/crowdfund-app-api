@@ -1,11 +1,14 @@
 package user
 
 import (
+	"errors"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserService interface {
-	RegisterUser(input UserInput) (User, error)
+	RegisterUser(input RegisterUserInput) (User, error)
+	Login(input LoginUserInput) (User, error)
 }
 
 type UserServiceImpl struct {
@@ -16,7 +19,7 @@ func NewUserService(userRepository UserRepository) *UserServiceImpl {
 	return &UserServiceImpl{userRepository}
 }
 
-func (u *UserServiceImpl) RegisterUser(input UserInput) (User, error) {
+func (u *UserServiceImpl) RegisterUser(input RegisterUserInput) (User, error) {
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.MinCost)
 
 	user := User{}
@@ -38,4 +41,28 @@ func (u *UserServiceImpl) RegisterUser(input UserInput) (User, error) {
 	}
 
 	return newUser, nil
+}
+
+func (u *UserServiceImpl) Login(input LoginUserInput) (User, error) {
+	email := input.Email
+	password := input.Password
+
+	user, err := u.userRepository.FindByEmail(email)
+
+	if err != nil {
+		return user, err
+	}
+
+	if user.Id == 0 {
+		return user, errors.New("Invalid email")
+	}
+
+	// match password
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+
+	if err != nil {
+		return user, errors.New("password not correct")
+	}
+
+	return user, nil
 }
