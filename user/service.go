@@ -12,6 +12,7 @@ type UserService interface {
 	Login(input LoginUserInput) (User, error)
 	IsEmailAvailable(input CheckEmailInput) (bool, error)
 	SaveAvatar(Id int, fileLocation string) (User, error)
+	GetUserById(Id int) (User, error)
 }
 
 type UserServiceImpl struct {
@@ -105,4 +106,18 @@ func (u *UserServiceImpl) SaveAvatar(Id int, fileLocation string)  (User, error)
 	}
 
 	return updatedUser, nil
+}
+
+func (u *UserServiceImpl) GetUserById(Id int) (User, error) { 
+	user, err := u.userRepository.FindById(Id)
+
+	if err != nil {
+		return user, err
+	}
+
+	if user.Id == 0 {
+		return user, errors.New("User not found")
+	}
+
+	return user, nil
 }

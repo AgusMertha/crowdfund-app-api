@@ -145,7 +145,9 @@ func (h *UserHandler) UploadAvatar(c *gin.Context) {
 		return
 	}
 	// save avatar string to DB
-	userId := 9
+	// get user id
+	currentUser := c.MustGet("currentUser").(user.User)
+	userId := currentUser.Id
 	path := fmt.Sprintf("images/profile/%d-%s", userId, file.Filename)
 
 	// save file to directory

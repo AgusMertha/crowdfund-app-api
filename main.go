@@ -3,9 +3,13 @@ package main
 import (
 	"kitabantu-api/auth"
 	"kitabantu-api/handler"
+	"kitabantu-api/helper"
 	"kitabantu-api/user"
 	"log"
+	"net/http"
+	"strings"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -31,6 +35,51 @@ func main() {
 	api.POST("/login", userHandler.LoginUser)
 	api.POST("/users", userHandler.RegisterUser)
 	api.POST("/email-check", userHandler.CheckEmailAvailability)
-	api.POST("upload-avatar", userHandler.UploadAvatar)
+	api.POST("upload-avatar", authMiddleware(authService, userService), userHandler.UploadAvatar)
 	router.Run(":3000")
+}
+
+func authMiddleware(authService auth.Service, userService user.UserService) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+
+		if !strings.Contains(authHeader, "Bearer") {
+			response := helper.ApiResponse("Unauthorized", http.StatusUnauthorized, "error", nil)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, response)
+			return
+		}
+
+		tokenString := ""
+		arrayToken := strings.Split(authHeader, " ")
+		if len(arrayToken) == 2 {
+			tokenString = arrayToken[1]
+		}
+
+		token, err := authService.ValidateToken(tokenString)
+
+		if err != nil {
+			response := helper.ApiResponse("Unauthorized", http.StatusUnauthorized, "error", nil)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, response)
+			return
+		}
+
+		claim, ok := token.Claims.(jwt.MapClaims)
+
+		if !ok || !token.Valid {
+			response := helper.ApiResponse("Unauthorized", http.StatusUnauthorized, "error", nil)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, response)
+			return
+		}
+
+		userId := int(claim["user_id"].(float64))
+		user, err := userService.GetUserById(userId)
+
+		if err != nil {
+			response := helper.ApiResponse("Unauthorized", http.StatusUnauthorized, "error", nil)
+			c.AbortWithStatusJSON(http.StatusUnauthorized, response)
+			return
+		}
+
+		c.Set("currentUser", user)
+	}
 }
