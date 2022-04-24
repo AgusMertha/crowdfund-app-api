@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"fmt"
+	"kitabantu-api/auth"
 	"kitabantu-api/helper"
 	"kitabantu-api/user"
 	"net/http"
@@ -10,10 +12,11 @@ import (
 
 type UserHandler struct {
 	userService user.UserService
+	authService auth.Service
 }
 
-func NewUserHandler(userService user.UserService) *UserHandler {
-	return &UserHandler{userService}
+func NewUserHandler(userService user.UserService, authService auth.Service) *UserHandler {
+	return &UserHandler{userService, authService}
 }
 
 func (h *UserHandler) RegisterUser(c *gin.Context) {
@@ -42,10 +45,16 @@ func (h *UserHandler) RegisterUser(c *gin.Context) {
 		return
 	}
 
-	// token, err := h.JwtService.GenerateToken()
+	// generate token
+	token, err := h.authService.GenerateToken(newUser.Id)
 
-	formatter := user.FormatUser(newUser, "token")
+	if err != nil {
+		errorResponse := helper.ApiResponse("Register account failed", http.StatusBadRequest, "error", nil)
+		c.JSON(http.StatusBadRequest, errorResponse)
+		return
+	}
 
+	formatter := user.FormatUser(newUser, token)
 	response := helper.ApiResponse("Account has been registered", http.StatusOK, "success", formatter)
 
 	c.JSON(http.StatusOK, response)
@@ -74,7 +83,17 @@ func (h *UserHandler) LoginUser(c *gin.Context) {
 		return
 	}
 
-	formatter := user.FormatUser(userLogin, "token")
+	// generate token
+	token, err := h.authService.GenerateToken(userLogin.Id)
+
+	if err != nil {
+		errorMessage := gin.H{"errors": err.Error()}
+		errorResponse := helper.ApiResponse("Login failed", http.StatusBadRequest, "error", errorMessage)
+		c.JSON(http.StatusBadRequest, errorResponse)
+		return
+	}
+
+	formatter := user.FormatUser(userLogin, token)
 	response := helper.ApiResponse("Login success", http.StatusOK, "success", formatter)
 
 	c.JSON(http.StatusOK, response)
@@ -113,4 +132,43 @@ func (h *UserHandler) CheckEmailAvailability(c *gin.Context) {
 	}
 	response := helper.ApiResponse(message, http.StatusOK, "success", data)
 	c.JSON(http.StatusOK, response)
+}
+
+func (h *UserHandler) UploadAvatar(c *gin.Context) {
+	file, err := c.FormFile("avatar")
+
+	if err != nil {
+
+		errorMessage := gin.H{"is_uploaded": false}
+		errorResponse := helper.ApiResponse("Failed to upload avatar image", http.StatusBadRequest, "error", errorMessage)
+		c.JSON(http.StatusBadRequest, errorResponse)
+		return
+	}
+	// save avatar string to DB
+	userId := 9
+	path := fmt.Sprintf("images/profile/%d-%s", userId, file.Filename)
+
+	// save file to directory
+	err = c.SaveUploadedFile(file, path)
+
+	if err != nil {
+
+		errorMessage := gin.H{"is_uploaded": false}
+		errorResponse := helper.ApiResponse("Failed to upload avatar image", http.StatusBadRequest, "error", errorMessage)
+		c.JSON(http.StatusBadRequest, errorResponse)
+		return
+	}
+
+	_, err = h.userService.SaveAvatar(userId, path)
+
+	if err != nil {
+
+		errorMessage := gin.H{"is_uploaded": false}
+		errorResponse := helper.ApiResponse("Failed to upload avatar image", http.StatusBadRequest, "error", errorMessage)
+		c.JSON(http.StatusBadRequest, errorResponse)
+		return
+	}
+
+	errorResponse := helper.ApiResponse("Success to upload avatar image", http.StatusOK, "success", gin.H{"is_uploaded": true})
+	c.JSON(http.StatusOK, errorResponse)
 }

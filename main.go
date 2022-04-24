@@ -1,6 +1,7 @@
 package main
 
 import (
+	"kitabantu-api/auth"
 	"kitabantu-api/handler"
 	"kitabantu-api/user"
 	"log"
@@ -20,7 +21,8 @@ func main() {
 
 	userRepository := user.NewUserRepository(db)
 	userService := user.NewUserService(userRepository)
-	userHandler := handler.NewUserHandler(userService)
+	authService := auth.NewJwtService()
+	userHandler := handler.NewUserHandler(userService, authService)
 
 	router := gin.Default()
 
@@ -28,6 +30,7 @@ func main() {
 
 	api.POST("/login", userHandler.LoginUser)
 	api.POST("/users", userHandler.RegisterUser)
-	api.POST("email-check", userHandler.CheckEmailAvailability)
+	api.POST("/email-check", userHandler.CheckEmailAvailability)
+	api.POST("upload-avatar", userHandler.UploadAvatar)
 	router.Run(":3000")
 }

@@ -2,6 +2,7 @@ package user
 
 import (
 	"errors"
+	"os"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -10,6 +11,7 @@ type UserService interface {
 	RegisterUser(input RegisterUserInput) (User, error)
 	Login(input LoginUserInput) (User, error)
 	IsEmailAvailable(input CheckEmailInput) (bool, error)
+	SaveAvatar(Id int, fileLocation string) (User, error)
 }
 
 type UserServiceImpl struct {
@@ -82,4 +84,25 @@ func (u *UserServiceImpl) IsEmailAvailable(input CheckEmailInput) (bool, error) 
 	}
 
 	return false, nil
+}
+
+func (u *UserServiceImpl) SaveAvatar(Id int, fileLocation string)  (User, error) {
+	user, err := u.userRepository.FindById(Id)
+
+	if err != nil {
+		return user, err
+	}
+
+	if user.AvatarFileName != "" {
+		os.Remove(user.AvatarFileName)
+	}
+
+	user.AvatarFileName = fileLocation
+	updatedUser, err := u.userRepository.Update(user)
+
+	if err != nil {
+		return updatedUser, err
+	}
+
+	return updatedUser, nil
 }
