@@ -2,6 +2,7 @@ package main
 
 import (
 	"kitabantu-api/auth"
+	"kitabantu-api/campaign"
 	"kitabantu-api/handler"
 	"kitabantu-api/helper"
 	"kitabantu-api/user"
@@ -24,9 +25,14 @@ func main() {
 	}
 
 	userRepository := user.NewUserRepository(db)
-	userService := user.NewUserService(userRepository)
+	campaignRepository := campaign.NewCampaignRepository(db)
+
 	authService := auth.NewJwtService()
+	userService := user.NewUserService(userRepository)
+	campaignService := campaign.NewCampaignService(campaignRepository)
+
 	userHandler := handler.NewUserHandler(userService, authService)
+	campaignHandler := handler.NewCampaignHandler(campaignService)
 
 	router := gin.Default()
 
@@ -36,6 +42,8 @@ func main() {
 	api.POST("/users", userHandler.RegisterUser)
 	api.POST("/email-check", userHandler.CheckEmailAvailability)
 	api.POST("upload-avatar", authMiddleware(authService, userService), userHandler.UploadAvatar)
+
+	api.GET("/campaigns", campaignHandler.GetCampaigns)
 	router.Run(":3000")
 }
 
