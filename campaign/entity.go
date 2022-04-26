@@ -9,7 +9,7 @@ type Campaign struct {
 	ShortDescription string          `json:"short_description"`
 	Description      string          `json:"description"`
 	GoalAmount       int             `json:"goal_amount"`
-	CurrnetAMount    int             `json:"currnet_amount"`
+	CurrentAmount    int             `json:"current_amount"`
 	Perks            string          `json:"perks"`
 	BackerCount      string          `json:"backer_count"`
 	Slug             string          `json:"slug"`
