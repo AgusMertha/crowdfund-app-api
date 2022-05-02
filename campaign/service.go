@@ -12,6 +12,7 @@ type CampaignService interface {
 	GetCampaignById(input GetCampaignDetailInput) (Campaign, error)
 	CreateCampaign(input CreateCampaignInput) (Campaign, error)
 	UpdateCampaign(input CreateCampaignInput, inputId GetCampaignDetailInput) (Campaign, error)
+	UploadCampaignImage(input CreateCampaignImageInput, fileLocation string) (CampaignImage, error)
 }
 
 type CampaignServiceImpl struct {
@@ -103,4 +104,41 @@ func (s *CampaignServiceImpl) UpdateCampaign(input CreateCampaignInput, inputId 
 	}
 
 	return updatedCampaign, nil
+}
+
+func (s *CampaignServiceImpl) UploadCampaignImage(input CreateCampaignImageInput, fileLocation string) (CampaignImage, error) {
+	campaign, err := s.campaignRepository.FindById(input.CampaignId)
+
+	if err != nil {
+		return CampaignImage{}, err
+	}
+
+	if campaign.Id == 0 {
+		return CampaignImage{}, errors.New("Campaign not found")
+	}
+
+	if campaign.UserId != input.User.Id {
+		return CampaignImage{}, errors.New("Not an owner of this campaign")
+	}
+
+	if input.IsPrimary {
+		_, err := s.campaignRepository.MarkAllIMageAsFalse(input.CampaignId)
+
+		if err != nil {
+			return CampaignImage{}, err
+		}
+	}
+
+	campaignImage := CampaignImage{}
+	campaignImage.CampaignId = input.CampaignId
+	campaignImage.IsPrimary = input.IsPrimary
+	campaignImage.FileName = fileLocation
+
+	image, err := s.campaignRepository.CreateImage(campaignImage)
+
+	if err != nil {
+		return image, err
+	}
+
+	return image, nil
 }

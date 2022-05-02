@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"kitabantu-api/campaign"
 	"kitabantu-api/helper"
 	"kitabantu-api/user"
@@ -139,4 +140,57 @@ func (h *CampaignHandler) UpdateCampaign(c *gin.Context) {
 
 	response := helper.ApiResponse("Update campaign success", http.StatusOK, "success", campaign.FormatCampaign(updatedCampaign))
 	c.JSON(http.StatusOK, response)
+}
+
+func (h *CampaignHandler) UploadCampaignImage(c *gin.Context) {
+	var input campaign.CreateCampaignImageInput
+
+	err := c.ShouldBind(&input)
+
+	if err != nil {
+		errors := helper.FormatError(err)
+
+		errorMessage := gin.H{"errors": errors}
+		errorResponse := helper.ApiResponse("Failed update campaign", http.StatusUnprocessableEntity, "error", errorMessage)
+		c.JSON(http.StatusUnprocessableEntity, errorResponse)
+		return
+	}
+
+	currentUser := c.MustGet("currentUser").(user.User)
+	input.User = currentUser
+
+	file, err := c.FormFile("campaign_image")
+
+	if err != nil {
+
+		errorMessage := gin.H{"is_uploaded": false}
+		errorResponse := helper.ApiResponse("Failed to upload campaign image", http.StatusBadRequest, "error", errorMessage)
+		c.JSON(http.StatusBadRequest, errorResponse)
+		return
+	}
+
+	path := fmt.Sprintf("images/campaign/%d-%s", input.CampaignId, file.Filename)
+
+	err = c.SaveUploadedFile(file, path)
+
+	if err != nil {
+
+		errorMessage := gin.H{"is_uploaded": false}
+		errorResponse := helper.ApiResponse("Failed to upload campaign image", http.StatusBadRequest, "error", errorMessage)
+		c.JSON(http.StatusBadRequest, errorResponse)
+		return
+	}
+
+	_, err = h.campaignService.UploadCampaignImage(input, path)
+
+	if err != nil {
+
+		errorMessage := gin.H{"is_uploaded": false}
+		errorResponse := helper.ApiResponse("Failed to upload campaign image", http.StatusBadRequest, "error", errorMessage)
+		c.JSON(http.StatusBadRequest, errorResponse)
+		return
+	}
+
+	errorResponse := helper.ApiResponse("Success to upload campaign image", http.StatusOK, "success", gin.H{"is_uploaded": true})
+	c.JSON(http.StatusOK, errorResponse)
 }

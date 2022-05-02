@@ -8,6 +8,8 @@ type CampaignRepository interface {
 	FindById(Id int) (Campaign, error)
 	Save(campaign Campaign) (Campaign, error)
 	Update(campaign Campaign) (Campaign, error)
+	CreateImage(campaignImage CampaignImage) (CampaignImage, error)
+	MarkAllIMageAsFalse(CampaignId int) (bool, error)
 }
 
 type CampaignRepositoryImpl struct {
@@ -70,4 +72,24 @@ func (c *CampaignRepositoryImpl) Update(campaign Campaign) (Campaign, error) {
 	}
 
 	return campaign, nil
+}
+
+func (c *CampaignRepositoryImpl) CreateImage(campaignImage CampaignImage) (CampaignImage, error) {
+	err := c.db.Create(&campaignImage).Error
+
+	if err != nil {
+		return campaignImage, err
+	}
+
+	return campaignImage, nil
+}
+
+func (c *CampaignRepositoryImpl) MarkAllIMageAsFalse(CampaignId int) (bool, error) {
+	err := c.db.Model(&CampaignImage{}).Where("campaign_id = ?", CampaignId).Update("is_primary", false).Error
+
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
