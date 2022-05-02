@@ -45,7 +45,10 @@ func main() {
 	api.POST("upload-avatar", authMiddleware(authService, userService), userHandler.UploadAvatar)
 
 	api.GET("/campaigns", campaignHandler.GetCampaigns)
+	api.POST("/campaigns", authMiddleware(authService, userService), campaignHandler.CreateCampaign)
 	api.GET("/campaigns/:id", campaignHandler.GetCampaignById)
+	api.PUT("/campaigns/:id", authMiddleware(authService, userService), campaignHandler.UpdateCampaign)
+	
 	router.Run(":3000")
 }
 

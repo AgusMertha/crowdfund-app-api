@@ -6,6 +6,8 @@ type CampaignRepository interface {
 	FindAll() ([]Campaign, error)
 	FindByUserId(userId int) ([]Campaign, error)
 	FindById(Id int) (Campaign, error)
+	Save(campaign Campaign) (Campaign, error)
+	Update(campaign Campaign) (Campaign, error)
 }
 
 type CampaignRepositoryImpl struct {
@@ -42,6 +44,26 @@ func (c *CampaignRepositoryImpl) FindById(Id int) (Campaign, error) {
 	campaign := Campaign{}
 
 	err := c.db.Preload("User").Preload("CampaignImages").Where("id = ?", Id).Find(&campaign).Error
+
+	if err != nil {
+		return campaign, err
+	}
+
+	return campaign, nil
+}
+
+func (c *CampaignRepositoryImpl) Save(campaign Campaign) (Campaign, error) {
+	err := c.db.Create(&campaign).Error
+
+	if err != nil {
+		return campaign, err
+	}
+
+	return campaign, nil
+}
+
+func (c *CampaignRepositoryImpl) Update(campaign Campaign) (Campaign, error) {
+	err := c.db.Save(&campaign).Error
 
 	if err != nil {
 		return campaign, err

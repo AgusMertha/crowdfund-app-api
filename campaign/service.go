@@ -1,8 +1,17 @@
 package campaign
 
+import (
+	"errors"
+	"fmt"
+
+	"github.com/gosimple/slug"
+)
+
 type CampaignService interface {
 	GetCampaigns(userId int) ([]Campaign, error)
 	GetCampaignById(input GetCampaignDetailInput) (Campaign, error)
+	CreateCampaign(input CreateCampaignInput) (Campaign, error)
+	UpdateCampaign(input CreateCampaignInput, inputId GetCampaignDetailInput) (Campaign, error)
 }
 
 type CampaignServiceImpl struct {
@@ -41,4 +50,57 @@ func (s *CampaignServiceImpl) GetCampaignById(input GetCampaignDetailInput) (Cam
 	}
 
 	return campaign, nil
+}
+
+func (s *CampaignServiceImpl) CreateCampaign(input CreateCampaignInput) (Campaign, error) {
+	campaign := Campaign{}
+	campaign.Name = input.Name
+	campaign.ShortDescription = input.ShortDescription
+	campaign.Description = input.Description
+	campaign.GoalAmount = input.GoalAmount
+	campaign.Perks = input.Perks
+	campaign.UserId = input.User.Id
+
+	slugCandidate := fmt.Sprintf("%s %d", input.Name, input.User.Id)
+	campaign.Slug = slug.Make(slugCandidate)
+
+	newCampaign, err := s.campaignRepository.Save(campaign)
+
+	if err != nil {
+		return newCampaign, err
+	}
+
+	return newCampaign, nil
+}
+
+func (s *CampaignServiceImpl) UpdateCampaign(input CreateCampaignInput, inputId GetCampaignDetailInput) (Campaign, error) {
+	campaign, err := s.campaignRepository.FindById(inputId.Id)
+
+	if err != nil {
+		return campaign, err
+	}
+
+	if campaign.Id == 0 {
+		return campaign, errors.New("Campaign not found")
+	}
+
+	if campaign.UserId != input.User.Id {
+		return campaign, errors.New("Not an owner of this campaign")
+	}
+
+	campaign.Name = input.Name
+	campaign.Description = input.Description
+	campaign.ShortDescription = input.ShortDescription
+	campaign.GoalAmount = input.GoalAmount
+	campaign.Perks = input.Perks
+	slugCandidate := fmt.Sprintf("%s %d", input.Name, input.User.Id)
+	campaign.Slug = slug.Make(slugCandidate)
+
+	updatedCampaign, err := s.campaignRepository.Update(campaign)
+
+	if err != nil {
+		return updatedCampaign, err
+	}
+
+	return updatedCampaign, nil
 }
