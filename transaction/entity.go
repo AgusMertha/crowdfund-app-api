@@ -1,6 +1,9 @@
 package transaction
 
-import "time"
+import (
+	"kitabantu-api/user"
+	"time"
+)
 
 type Transaction struct {
 	Id         int       `json:"id"`
@@ -11,4 +14,5 @@ type Transaction struct {
 	Code       string    `json:"code"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
+	User       user.User
 }

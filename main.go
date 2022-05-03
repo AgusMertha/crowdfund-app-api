@@ -5,6 +5,7 @@ import (
 	"kitabantu-api/campaign"
 	"kitabantu-api/handler"
 	"kitabantu-api/helper"
+	"kitabantu-api/transaction"
 	"kitabantu-api/user"
 	"log"
 	"net/http"
@@ -26,13 +27,16 @@ func main() {
 
 	userRepository := user.NewUserRepository(db)
 	campaignRepository := campaign.NewCampaignRepository(db)
+	transactionRepository := transaction.NewTransactionRepository(db)
 
 	authService := auth.NewJwtService()
 	userService := user.NewUserService(userRepository)
 	campaignService := campaign.NewCampaignService(campaignRepository)
+	transactionService := transaction.NewTransactionService(transactionRepository, campaignRepository)
 
 	userHandler := handler.NewUserHandler(userService, authService)
 	campaignHandler := handler.NewCampaignHandler(campaignService)
+	transactionHandler := handler.NewTranscationHandler(transactionService)
 
 	router := gin.Default()
 	router.Static("/images", "./images")
@@ -46,9 +50,10 @@ func main() {
 
 	api.GET("/campaigns", campaignHandler.GetCampaigns)
 	api.POST("/campaigns", authMiddleware(authService, userService), campaignHandler.CreateCampaign)
+	api.POST("/campaigns/upload-image", authMiddleware(authService, userService), campaignHandler.UploadCampaignImage)
 	api.GET("/campaigns/:id", campaignHandler.GetCampaignById)
 	api.PUT("/campaigns/:id", authMiddleware(authService, userService), campaignHandler.UpdateCampaign)
-	api.POST("/campaigns/upload-image", authMiddleware(authService, userService), campaignHandler.UploadCampaignImage)
+	api.GET("/campaigns/:id/transactions", authMiddleware(authService, userService), transactionHandler.GetTransactionByCampaign)
 
 	router.Run(":3000")
 }
