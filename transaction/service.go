@@ -7,6 +7,7 @@ import (
 
 type TransactionService interface {
 	GetTransactionByCampaignId(input GetCampaignTransactionsInput) ([]Transaction, error)
+	GetTransactionByUserId(userId int) ([]Transaction, error)
 }
 
 type TransactionServiceImpl struct {
@@ -20,6 +21,10 @@ func NewTransactionService(transactionRepository TransactionRepository, campaign
 
 func (t *TransactionServiceImpl) GetTransactionByCampaignId(input GetCampaignTransactionsInput) ([]Transaction, error) {
 	campaign, err := t.campaignRepository.FindById(input.CampaignId)
+
+	if campaign.Id == 0 {
+		return []Transaction{}, errors.New("Campaign not found")
+	}
 
 	if err != nil {
 		return []Transaction{}, err
@@ -35,5 +40,14 @@ func (t *TransactionServiceImpl) GetTransactionByCampaignId(input GetCampaignTra
 		return transactions, err
 	}
 
+	return transactions, nil
+}
+
+func (t *TransactionServiceImpl) GetTransactionByUserId(userId int) ([]Transaction, error) {
+	transactions, err := t.transactionRepository.GetTransactionByUser(userId)
+
+	if err != nil {
+		return transactions, err
+	}
 	return transactions, nil
 }

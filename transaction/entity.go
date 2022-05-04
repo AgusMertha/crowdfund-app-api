@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"kitabantu-api/campaign"
 	"kitabantu-api/user"
 	"time"
 )
@@ -15,4 +16,5 @@ type Transaction struct {
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
 	User       user.User
+	Campaign   campaign.Campaign
 }
