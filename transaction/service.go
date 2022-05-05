@@ -62,7 +62,10 @@ func (t *TransactionServiceImpl) CreateTransaction(input CreateTransactionInput)
 	transaction.CampaignId = input.CampaignId
 	transaction.UserId = input.User.Id
 	transaction.Status = "pending"
-	transaction.Code = "order-" + strconv.Itoa(input.CampaignId) + strconv.Itoa(input.User.Id) + time.Now().String()
+
+	timestamp := strconv.FormatInt(time.Now().UnixNano(), 10)
+
+	transaction.Code = "order-" + strconv.Itoa(input.CampaignId) + strconv.Itoa(input.User.Id) + timestamp
 
 	newTransaction, err := t.transactionRepository.Save(transaction)
 
