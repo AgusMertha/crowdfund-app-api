@@ -56,6 +56,7 @@ func main() {
 	api.GET("/campaigns/:id/transactions", authMiddleware(authService, userService), transactionHandler.GetTransactionByCampaign)
 
 	api.GET("/transactions", authMiddleware(authService, userService), transactionHandler.GetUserTransaction)
+	api.POST("/transactions/create", authMiddleware(authService, userService), transactionHandler.CreateTransaction)
 
 	router.Run(":3000")
 }

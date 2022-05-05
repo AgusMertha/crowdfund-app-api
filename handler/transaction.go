@@ -64,3 +64,35 @@ func (t *TransactionHandler) GetUserTransaction(c *gin.Context) {
 
 	return
 }
+
+func (t *TransactionHandler) CreateTransaction(c *gin.Context) {
+	var input transaction.CreateTransactionInput
+
+	err := c.ShouldBindJSON(&input)
+
+	if err != nil {
+		errors := helper.FormatError(err)
+
+		errorMessage := gin.H{"errors": errors}
+		errorResponse := helper.ApiResponse("Failed create transaction", http.StatusUnprocessableEntity, "error", errorMessage)
+		c.JSON(http.StatusUnprocessableEntity, errorResponse)
+		return
+	}
+
+	currentUser := c.MustGet("currentUser").(user.User)
+	input.User = currentUser
+
+	newTranscation, err := t.transactionService.CreateTransaction(input)
+
+	if err != nil {
+		response := helper.ApiResponse("Failed to create transaction", http.StatusBadRequest, "error", gin.H{"errors": err.Error()})
+		c.JSON(http.StatusBadRequest, response)
+
+		return
+	}
+
+	response := helper.ApiResponse("Success to get campaign transactions", http.StatusOK, "success", newTranscation)
+	c.JSON(http.StatusOK, response)
+
+	return
+}
